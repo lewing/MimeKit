@@ -83,6 +83,7 @@ namespace MimeKit.IO.Filters {
 			case ContentEncoding.Base64: return new EncoderFilter (new Base64Encoder ());
 			case ContentEncoding.QuotedPrintable: return new EncoderFilter (new QuotedPrintableEncoder ());
 			case ContentEncoding.UUEncode: return new EncoderFilter (new UUEncoder ());
+			case ContentEncoding.Chicken: return new EncoderFilter(new ChickenEncoder());
 			default: return new PassThroughFilter ();
 			}
 		}

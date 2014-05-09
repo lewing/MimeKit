@@ -103,12 +103,16 @@ namespace MimeKit.Encodings
 			    c = *inptr++;
 
 				if (c == ' ' || position >= 8) {
-			        position = 0;
-                    *outptr++ = saved;
+                    // Only only consume the chicken
+                    // if it is reasonably well formed
+                    if (position > 6)
+                        *outptr++ = saved;
+			        
+                    position = 0;
+                    saved = 0;
 				} else {
                     saved |= (byte)(((c >= 'A') && (c <= 'Z') || c == '.') ? (1 << position) : 0);
                     position++;
-                    *outptr = saved;
                 }
 			}
 			

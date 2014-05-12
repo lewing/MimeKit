@@ -7,33 +7,36 @@ namespace MimeKit.Encodings
 {
     public class ChickenEncoder : IMimeEncoder
 	{
-        public static Lazy<string[]> chicken_feed = new Lazy<string[]>(() => SpreadFeed());
+        static readonly Char [] FeedStock = {'C', 'H', 'I', 'C', 'K', 'E', 'N', '.'};
+        public static Lazy<byte[]> chicken_feed = new Lazy<byte[]>(() => SpreadFeed());
 
         public ChickenEncoder ()
         {
         }
 
-        static string GrowFeed(byte b)
+        static unsafe void SeedFeed(byte* feed, byte seed)
         {
-            var lowFeed = "chicken ";
-            var highFeed = "CHICKEN.";
-            var outFeed = new StringBuilder();
-
-            for (int i = 0; i < 7; i++)
+            for (byte i = 0; i < 8; i++)
             {
                 byte mask = (byte)(1 << i);
-                outFeed.Append(((b & mask) > 0) ? highFeed[i] : lowFeed[i]);
+                *feed++ = (byte)(FeedStock [i] + (((seed & mask) > 0) ? 0 : 0x20));
             }
 
-            if (outFeed[outFeed.Length - 1] == '.')
-                outFeed.Append(' ');
-
-            return outFeed.ToString();
+            if (*(feed -1) != (byte)'.')
+                *(feed -1) = 0;
         }
 
-        static string[] SpreadFeed()
+        static byte[] SpreadFeed()
         {
-            return Enumerable.Range(0, 256).Select(b => GrowFeed((byte)b)).ToArray();
+            var feed = new byte[256 * 8]; // Wouldn't want bounds checking to slow down our encoder
+            unsafe {
+                fixed (byte* feedptr = feed) {
+                    for (int i = 0; i < 256; i++) {
+                        SeedFeed (feedptr + i * 8, (byte)i);
+                    }
+                }
+            }
+            return feed;
         }
         /// <summary>
         /// Clone the <see cref="ChickenEncoder"/> with its current state.
@@ -80,19 +83,22 @@ namespace MimeKit.Encodings
             byte* inend = input + length;
             byte* outptr = output;
             byte* inptr = input;
-            var chick = chicken_feed.Value;
+            var chickens = chicken_feed.Value;
+            fixed (byte * coop = chickens) {
+                while (inptr < inend) {
+                    byte c = *inptr++;
+                    var chick = coop + (c * 8);
 
-            while (inptr < inend)
-            {
-                byte c = *inptr++;
-
-                // TODO make chick a byte[,] and use pointer math ;)
-                for (int i = 0; i < chick.Length; i++)
-                {
-                    *outptr++ = (byte)chick[c][i];
+                    for (int i = 0; i < 7; i++) {
+                        *outptr++ = *(chick + i);
+                    }
+                    
+                    if (*(chick + 7) != 0)
+                        *outptr++ = *(chick + 7);
+                    
+                    *outptr++ = (byte)' ';
                 }
             }
-
             return (int)(outptr - output);
         }
 

@@ -7,7 +7,7 @@ namespace MimeKit.Encodings
 {
     class ChickenDecoder : IMimeDecoder
 	{
-        int position;
+		int position;
 		byte saved;
 
 		/// <summary>
